@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="options.css">
+    <link href='http://fonts.googleapis.com/css?family=Lato:400,700' rel='stylesheet' type='text/css'>
+
+</head>
+
+
+<body>
+    <h1>FrontPageNYT Settings</h1>
+    <hr>
+    <br>
+    <form name="settings" action="" id="settings">
+        <br>
+        <input type="checkbox" name="cycle" id="cycle" value="cycle"> <label for="cycle"><b>Cycle between stories?</b> </label>
+        <br><br>
+        <div id="interval" style="display: none">
+            <b>Cycle every:</b>
+            <br><br>
+            <input type="radio" name="interval" id="5" value="5" checked> <label for="5">5 seconds <br> </label>
+            <input type="radio" name="interval" id="10" value="10"> <label for="10">10 seconds <br> </label>
+            <input type="radio" name="interval" id="15" value="15"> <label for="15">15 seconds <br> </label>
+            <br><br>
+        </div>
+
+        <b>News categories (defaults to all):</b><br><br>
+        <input type="checkbox" name="categories" id="business" value="business" >Business <br>
+        <input type="checkbox" name="categories" id="science" value="science" >Science <br>
+        <input type="checkbox" name="categories" id="technology" value="technology">Tech <br>
+        <input type="checkbox" name="categories" id="world" value="world" >World <br>
+        <input type="checkbox" name="categories" id="sports" value="sports">Sports <br>
+        <input type="checkbox" name="categories" id="arts" value="arts">Arts <br>
+        <input type="checkbox" name="categories" id="books" value="books">Books <br>
+        <br><br>
+        <b>Expire fetched news cache every:</b>
+            <br><br>
+            <input type="radio" name="cache_expiry" id="cache_expiry_20" value="20"> <label for="cache_expiry_20">20 seconds <br> </label>
+            <input type="radio" name="cache_expiry" id="cache_expiry_60" value="60" checked> <label for="cache_expiry_60">1 minute <br> </label>
+            <input type="radio" name="cache_expiry" id="cache_expiry_300" value="300"> <label for="cache_expiry_300">5 minutes <br> </label>
+        <br><br>
+    </form>
+    <br>
+    <div id="status"></div>
+    <br><br>
+    <button id="save">Save</button>
+
+    <script src="options.js"></script>
+
+
+</body>
+</html>

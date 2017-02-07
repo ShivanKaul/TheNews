@@ -1,0 +1,56 @@
+#bottom { 
+	position: fixed;
+	bottom: 2%;
+	left: 50%;
+	transform: translateX(-50%);
+}
+
+div.to_be_centered {
+	padding: 20px;
+	height: 18em;
+	position: relative;
+}
+
+div.to_be_centered a {
+	color: black;
+	vertical-align: middle;
+	text-decoration: none;
+	font-size: 3em;
+	margin: 15px;
+	position: absolute;
+	top: 65%;
+	left: 50%;
+	margin-right: -50%;
+	font-family : 'Georgia', serif;
+	transform: translate(-50%, -50%);
+}
+
+a {
+	text-align: center;
+	text-decoration: none;
+	color: black;
+}
+
+#abstract {
+	font-style: italic;
+	font-family: 'Merriweather', 'Georgia', 'serif';
+	font-size: 1.3em;
+	text-align: center;
+	width: 40%;
+	margin: 0 auto;
+	color: grey;
+}
+
+a:hover {
+	color: grey;
+}
+
+div.to_be_centered a:hover {
+	color: grey;
+}
+a.down {
+	font-weight: bold;
+}
+p {
+	font-family: 'Lato', sans-serif;
+}
