@@ -8,7 +8,7 @@
 
 
 <body>
-    <h1>FrontPageNYT Settings</h1>
+    <h1>TheNews Settings</h1>
     <hr>
     <br>
     <form name="settings" action="" id="settings">
@@ -26,12 +26,12 @@
 
         <b>News categories (defaults to all):</b><br><br>
         <input type="checkbox" name="categories" id="business" value="business" >Business <br>
-        <input type="checkbox" name="categories" id="science" value="science" >Science <br>
+        <input type="checkbox" name="categories" id="science-and-nature" value="science-and-nature" >Science <br>
         <input type="checkbox" name="categories" id="technology" value="technology">Tech <br>
-        <input type="checkbox" name="categories" id="world" value="world" >World <br>
-        <input type="checkbox" name="categories" id="sports" value="sports">Sports <br>
-        <input type="checkbox" name="categories" id="arts" value="arts">Arts <br>
-        <input type="checkbox" name="categories" id="books" value="books">Books <br>
+        <input type="checkbox" name="categories" id="general" value="general" >General <br>
+        <input type="checkbox" name="categories" id="sport" value="sport">Sports <br>
+        <input type="checkbox" name="categories" id="gaming" value="gaming">Gaming <br>
+        <input type="checkbox" name="categories" id="music" value="music">Music <br>
         <br><br>
         <b>Expire fetched news cache every:</b>
             <br><br>
@@ -39,6 +39,12 @@
             <input type="radio" name="cache_expiry" id="cache_expiry_60" value="60" checked> <label for="cache_expiry_60">1 minute <br> </label>
             <input type="radio" name="cache_expiry" id="cache_expiry_300" value="300"> <label for="cache_expiry_300">5 minutes <br> </label>
         <br><br>
+        <!-- <b>Language:</b>
+            <br><br>
+            <input type="radio" name="lang" id="en" value="en" checked> <label for="en">English <br> </label>
+            <input type="radio" name="lang" id="de" value="de" > <label for="de">German <br> </label>
+            <input type="radio" name="lang" id="fr" value="fr"> <label for="fr">French <br> </label>
+        <br><br> -->
     </form>
     <br>
     <div id="status"></div>

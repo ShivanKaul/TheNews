@@ -1,23 +1,50 @@
 'use strict';
 
-// Don't support filtering based on news sources because of limitations in newapi.org
-// Process:
+function flatten(array) {
+    return [].concat.apply([], array);
+}
+
+function getDomain(url) {
+    var matcher = url.match(/^https?\:\/\/([^\/:?#]+)(?:[\/:?#]|$)/i);
+    return matcher && matcher[1];
+}
+
+/**
+ * Randomize array element order in-place.
+ * O(num)
+ * Using Durstenfeld shuffle algorithm, stopping after we have enough.
+ */
+function pickRandom(num, array) {
+    for (var i = array.length - 1; i > 0 && i >= array.length - num; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+    // Return last num elements
+    return array.slice(Math.max(array.length - num, 1));
+}
+
+
+// Flow:
 // Starting with list of categories, flatmap it to a list of sources
-// Reduce this list, doing a query for each source and build list of {title, abstract, url}
-// Display them
+// Map this list, doing a query for each source and build list of {title, abstract, url}
+// Display them.
+
+// Note: Don't support filtering based on news sources because of limitations in newsapi.org
 
 // Local storage: Options
 var CYCLE_INTERVAL = 5; // in seconds
-var BASE_API_URL_SOURCES = "https://newsapi.org/v1/sources";
-var BASE_API_URL_ARTICLES = "https://newsapi.org/v1/articles";
+var BASE_API_URL_SOURCES = "https://newsapi.org/v1/sources?category=";
+var BASE_API_URL_ARTICLES = "https://newsapi.org/v1/articles?source=";
 var CYCLE = false;
-var CATEGORIES = "all";
+var CATEGORIES = "";
 // Local storage: Cache
 var CACHED_RESULTS = {};
+var LANGUAGE = "en"
 var CACHED_TIMESTAMP = null;
 var CACHE_EXPIRY = 60;
-// Depends on NYT API
-var MAX_STORIES = 20;
+var MAX_STORIES = 20; // Too many stories leads to Chrome Storage error
 var AJAX_TIMEOUT = 10; // in seconds
 
 // Restores options and result cache
@@ -29,12 +56,14 @@ function restoreLocalStorage() {
         categories: CATEGORIES,
         cycle: CYCLE,
         results: CACHED_RESULTS,
+        language: LANGUAGE,
         timestamp: CACHED_TIMESTAMP,
         cache_expiry: CACHE_EXPIRY
     }, function(items) {
         CATEGORIES = items.categories;
         CYCLE_INTERVAL = items.interval;
         CYCLE = items.cycle;
+        LANGUAGE = items.language;
         CACHED_RESULTS = items.results;
         CACHED_TIMESTAMP = items.timestamp;
         CACHE_EXPIRY = items.cache_expiry;
@@ -67,6 +96,7 @@ function getRandomStory(numResults, stories) {
     var title = stories[randomNum].title;
     var abstract = stories[randomNum].abstract;
     var url = stories[randomNum].url;
+    var source = stories[randomNum].source;
     var uninteresting = (title == "Letters to the Editor" || title.indexOf("Evening Briefing") > -1 || title == "Reactions" || title.indexOf("Review: ") > -1);
     // Basic uninteresting article filtering
     if (uninteresting) {
@@ -77,44 +107,62 @@ function getRandomStory(numResults, stories) {
     return {
         title: title,
         abstract: abstract,
+        source: source,
         url: url
     };
 }
 
-var fetch = function() {
+function fetch(queryURL, callback) {
     return new Promise(
         function(resolve, reject) {
-            var queryURL = BASE_API_URL + CATEGORIES + "/.json?api-key=" + secretKeys.API_KEY;
-            $(document).ready(function() {
-                $.ajax({
-                    url: queryURL,
-                    dataType: "json",
-                    timeout: AJAX_TIMEOUT * 1000,
-                    statusCode: {
-                        502: function() {
-                            reject("Error 502 thrown while fetching from NYT API.");
-                        }
-                    },
-                    success: function(queryResult) {
-                        // get array of all headlines
-                        var stories = queryResult.results;
-                        var numResults = queryResult.num_results;
-                        resolve({
-                            stories: stories,
-                            numResults: numResults
-                        });
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        var cacheAvailableText = ". No cached stories available.";
-                        if (!$.isEmptyObject(CACHED_RESULTS)) {
-                            cacheAvailableText = ". Trying to display cached results.";
-                            display(CACHED_RESULTS, false);
-                        }
-                        reject("AJAX call errored/timed out, with error thrown: " + JSON.stringify(jqXHR) + cacheAvailableText);
+            $.ajax({
+                url: queryURL,
+                dataType: "json",
+                timeout: AJAX_TIMEOUT * 1000,
+                statusCode: {
+                    502: function() {
+                        reject("Error 502 thrown while fetching from newsapi.org");
                     }
-                });
+                },
+                success: function(queryResult) {
+                    resolve(callback(queryResult));
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    var cacheAvailableText = ". No cached stories available.";
+                    if (!$.isEmptyObject(CACHED_RESULTS)) {
+                        cacheAvailableText = ". Trying to display cached results.";
+                        display(CACHED_RESULTS, false);
+                    }
+                    reject("[ERROR][TheNews]: AJAX call to fetch errored/timed out, with error thrown: " + JSON.stringify(jqXHR) + cacheAvailableText);
+                }
             });
         }
+    );
+}
+
+var fetchSources = function() {
+    var categories = CATEGORIES.split(";");
+    return Promise.all(
+        categories.map(function(category) {
+            var queryURL = BASE_API_URL_SOURCES + category + "&language=" + LANGUAGE + "&apiKey=" + secretKeys.API_KEY;
+            return fetch(queryURL, function(queryResult) {
+                return queryResult.sources.map(function(source) {
+                    return source.id;
+                });
+            });
+        })
+    );
+};
+
+var fetchStories = function(sources) {
+    return Promise.all(
+        flatten(sources)
+        .map(function(source) {
+            var queryURL = BASE_API_URL_ARTICLES + source + "&apiKey=" + secretKeys.API_KEY;
+            return fetch(queryURL, function(queryResult) {
+                return queryResult.articles;
+            });
+        })
     );
 }
 
@@ -123,14 +171,14 @@ var decode = function(results) {
     return new Promise(
         function(resolve, reject) {
             resolve({
-                stories: results.stories.map(function(result) {
+                stories: pickRandom(MAX_STORIES, flatten(results)).map(function(result) {
                     return {
                         title: result.title,
-                        abstract: result.abstract,
+                        source: getDomain(result.url),
+                        abstract: result.description,
                         url: result.url
                     };
-                }),
-                numResults: results.numResults
+                })
             });
         }
     );
@@ -138,14 +186,14 @@ var decode = function(results) {
 
 var display = function(results, updateCache) {
     function display(results, updateCache) {
-        var result = getRandomStory(results.numResults, results.stories);
-        var title = result.title;
+        var result = getRandomStory(results.stories.length, results.stories);
+        var title = result.source ? result.title + " (" + result.source + ")" : result.title;
         var link = result.url;
         // Add quotes
         var abstract = "&ldquo;" + result.abstract + "&rdquo;";
         // Display
         document.getElementById("insert").setAttribute('href', link);
-        document.getElementById("insert").setAttribute('title', "Link to NYT article");
+        document.getElementById("insert").setAttribute('title', "Link to article");
         document.getElementById("insert").innerHTML = title;
         document.getElementById("abstract").innerHTML = abstract;
         // Fade in text
@@ -165,7 +213,8 @@ var display = function(results, updateCache) {
 
 function fetchDecodeDisplay() {
     // Fetch -> Decode -> Display
-    fetch()
+    fetchSources()
+        .then((results) => fetchStories(results))
         .then((results) => decode(results))
         .then((results) => display(results, true))
         .catch(function(error) {

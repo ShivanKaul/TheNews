@@ -7,6 +7,7 @@ function saveOptions() {
     var interval = formElements['interval'].value;
     var cycle = formElements['cycle'].checked;
     var cache_expiry = formElements['cache_expiry'].value;
+    // var language = formElements['lang'].value;
 
     var categories = Array.prototype.slice.call(formElements['categories']).filter(function(x) {
             return x.checked;
@@ -16,13 +17,10 @@ function saveOptions() {
         })
         .join(";");
 
-    if (!categories) {
-        categories = "all";
-    }
-
     chrome.storage.sync.set({
         interval: interval,
         cycle: cycle,
+        // language: language,
         categories: categories,
         cache_expiry: cache_expiry
     }, function() {
@@ -42,8 +40,9 @@ function getOptions() {
     // Modify view
     chrome.storage.sync.get({
         interval: 5,
+        // language: "en",
         cycle: false,
-        categories: "all",
+        categories: "",
         cache_expiry: 60
     }, function(items) {
         if (items.cycle) {
@@ -52,12 +51,16 @@ function getOptions() {
             document.getElementById('cycle').checked = true;
         }
         // Categories
-        var categoriesArray = items.categories.split(";");
-        for (var i = 0; i < categoriesArray.length; i++) {
-            document.getElementById(categoriesArray[i]).checked = true;
+        if (items.categories) {
+            var categoriesArray = items.categories.split(";");
+            for (var i = 0; i < categoriesArray.length; i++) {
+                document.getElementById(categoriesArray[i]).checked = true;
+            }
         }
         // Cache expiry
         document.getElementById('cache_expiry_' + items.cache_expiry.toString()).checked = true;
+        // Language
+        // document.getElementById(items.language.toString()).checked = true;
     });
 }
 document.addEventListener('DOMContentLoaded', getOptions);
