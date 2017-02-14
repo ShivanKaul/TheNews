@@ -27,17 +27,17 @@ function pickRandom(num, array) {
 
 
 // Flow:
-// Starting with list of categories, flatmap it to a list of sources
-// Map this list, doing a query for each source and build list of {title, abstract, url}
+// Starting with list of categories, map it to a list of sources
+// Flatten and map this list, doing a query for each source and build list of {title, abstract, url}
 // Display them.
 
 // Note: Don't support filtering based on news sources because of limitations in newsapi.org
 
 // Local storage: Options
-var CYCLE_INTERVAL = 5; // in seconds
+var CYCLE_INTERVAL = 10; // in seconds
 var BASE_API_URL_SOURCES = "https://newsapi.org/v1/sources?category=";
 var BASE_API_URL_ARTICLES = "https://newsapi.org/v1/articles?source=";
-var CYCLE = false;
+var CYCLE = true;
 var CATEGORIES = "";
 // Local storage: Cache
 var CACHED_RESULTS = {};
@@ -112,7 +112,7 @@ function getRandomStory(numResults, stories) {
     };
 }
 
-function fetch(queryURL, callback) {
+function fetch(queryURL, errorMessage, processResults) {
     return new Promise(
         function(resolve, reject) {
             $.ajax({
@@ -125,7 +125,7 @@ function fetch(queryURL, callback) {
                     }
                 },
                 success: function(queryResult) {
-                    resolve(callback(queryResult));
+                    resolve(processResults(queryResult));
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
                     var cacheAvailableText = ". No cached stories available.";
@@ -133,7 +133,7 @@ function fetch(queryURL, callback) {
                         cacheAvailableText = ". Trying to display cached results.";
                         display(CACHED_RESULTS, false);
                     }
-                    reject("[ERROR][TheNews]: AJAX call to fetch errored/timed out, with error thrown: " + JSON.stringify(jqXHR) + cacheAvailableText);
+                    reject(errorMessage + JSON.stringify(jqXHR) + cacheAvailableText);
                 }
             });
         }
@@ -144,12 +144,14 @@ var fetchSources = function() {
     var categories = CATEGORIES.split(";");
     return Promise.all(
         categories.map(function(category) {
-            var queryURL = BASE_API_URL_SOURCES + category + "&language=" + LANGUAGE + "&apiKey=" + secretKeys.API_KEY;
-            return fetch(queryURL, function(queryResult) {
-                return queryResult.sources.map(function(source) {
+            let processSources = function(fetchedSources) {
+                return fetchedSources.sources.map(function(source) {
                     return source.id;
                 });
-            });
+            };
+            let errorMessage = "[ERROR][TheNews]: AJAX call to fetch sources errored/timed out, with error thrown: ";
+            let queryURL = BASE_API_URL_SOURCES + category + "&language=" + LANGUAGE + "&apiKey=" + secretKeys.API_KEY;
+            return fetch(queryURL, errorMessage, processSources);
         })
     );
 };
@@ -158,10 +160,12 @@ var fetchStories = function(sources) {
     return Promise.all(
         flatten(sources)
         .map(function(source) {
-            var queryURL = BASE_API_URL_ARTICLES + source + "&apiKey=" + secretKeys.API_KEY;
-            return fetch(queryURL, function(queryResult) {
-                return queryResult.articles;
-            });
+            let processStories = function(fetchedStories) {
+                return fetchedStories.articles;
+            };
+            let errorMessage = "[ERROR][TheNews]: AJAX call to fetch stories errored/timed out, with error thrown: ";
+            let queryURL = BASE_API_URL_ARTICLES + source + "&apiKey=" + secretKeys.API_KEY;
+            return fetch(queryURL, errorMessage, processStories);
         })
     );
 }
@@ -187,10 +191,14 @@ var decode = function(results) {
 var display = function(results, updateCache) {
     function display(results, updateCache) {
         var result = getRandomStory(results.stories.length, results.stories);
-        var title = result.source ? result.title + " (" + result.source + ")" : result.title;
+        var title = result.title;
         var link = result.url;
         // Add quotes
-        var abstract = "&ldquo;" + result.abstract + "&rdquo;";
+        var abstract = "";
+        if (result.abstract) {
+            var quotedAbstract = "&ldquo;" + result.abstract + "&rdquo;";
+            abstract = result.source ? result.source + " - " + quotedAbstract : quotedAbstract;
+        }
         // Display
         document.getElementById("insert").setAttribute('href', link);
         document.getElementById("insert").setAttribute('title', "Link to article");

@@ -39,9 +39,9 @@ document.getElementById('save').addEventListener('click',
 function getOptions() {
     // Modify view
     chrome.storage.sync.get({
-        interval: 5,
+        interval: 10,
         // language: "en",
-        cycle: false,
+        cycle: true,
         categories: "",
         cache_expiry: 60
     }, function(items) {
