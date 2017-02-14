@@ -9,7 +9,7 @@ Every time you open a new tab, a recent headline is displayed, pulled from over 
 
 Keep up-to-date with whatever's happening in the world, one tab at a time. 
 
-Choose between different categories such as Business, Technology, etc. The headlines refresh at a rate you select. To toggle cycling between stories and selecting categories, go to Options (Click TheNews button next to address bar).
+Choose between different categories such as Business, Technology, etc. The headlines refresh at a rate you select. To toggle cycling between stories and selecting categories, go to Options (Click TheNews icon next to address bar).
 
 -----
 
