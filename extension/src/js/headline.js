@@ -200,12 +200,12 @@ var display = function(results, updateCache) {
             abstract = result.source ? result.source + " - " + quotedAbstract : quotedAbstract;
         }
         // Display
-        document.getElementById("insert").setAttribute('href', link);
-        document.getElementById("insert").setAttribute('title', "Link to article");
-        document.getElementById("insert").innerHTML = title;
+        document.getElementById("headline").setAttribute('href', link);
+        document.getElementById("headline").setAttribute('title', "Link to article");
+        document.getElementById("headline").innerHTML = title;
         document.getElementById("abstract").innerHTML = abstract;
         // Fade in text
-        $("#insert").hide().fadeIn();
+        $("#headline").hide().fadeIn();
         $("#abstract").hide().fadeIn();
         // Store results in local storage
         if (updateCache) saveResults(results);
