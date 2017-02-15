@@ -4,7 +4,7 @@
     "name": "TheNews",
     "short_name": "thenews",
     "description": "Read the latest headline every time you open a new tab.",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "homepage_url": "http://shivankaul.com",
     "chrome_url_overrides": {
         "newtab": "src/index.html"
