@@ -28,18 +28,22 @@ function pickRandom(num, array) {
         array[i] = array[j];
         array[j] = temp;
     }
-    // Return last num elements
+    // Return last (num) elements
     return array.slice(Math.max(array.length - num, 1));
 }
 
 /*
-    Flow:
-    - Starting with list of categories, map it to a list of sources
+    Main Flow:
+    - Check cache. If available / not expired, simply display
+    - Else:
+    - Starting with list of categories chosen by user, map it to a list of list of sources
+        by fetching from newsapi
     - Flatten and map this list, doing a query for each source and build list of {title, abstract, url}
-    - Display them.
+    - Display them and update cache
     Note: Don't support filtering based on news sources because of limitations in newsapi.org
 */
 
+// Defaults:
 // Local storage: Options
 var CYCLE_INTERVAL = 10; // in seconds
 var BASE_API_URL_SOURCES = "https://newsapi.org/v1/sources?category=";
@@ -109,7 +113,10 @@ function getRandomStory(numResults, stories) {
     var url = stories[randomNum].url;
     var source = stories[randomNum].source;
     // Originally done for NYT extension
-    var uninteresting = (title == "Letters to the Editor" || contains(title, "Evening Briefing") || title == "Reactions" || contains(title, "Review: "));
+    var uninteresting = (title == "Letters to the Editor" ||
+        contains(title, "Evening Briefing") ||
+        title == "Reactions" ||
+        contains(title, "Review: "));
     // Basic uninteresting article filtering
     if (uninteresting) {
         // Remove uninteresting story: citation: http://stackoverflow.com/a/5767357/2989693
@@ -246,13 +253,13 @@ var display = function(results, updateCache) {
 function fetchDecodeDisplay() {
     // Fetch -> Decode -> Display
     fetchSources()
-        .then((results) => fetchStories(results))
-        .then((results) => decode(results))
+        .then((sources) => fetchStories(sources))
+        .then((stories) => decode(stories))
         .then((results) => display(results, true))
         .catch(function(error) {
             console.log(error);
         });
 }
 
-// We start with restoring state - options and cached results (if any)
+// We start with restoring state - user options and cached results (if any)
 restoreLocalStorage();
