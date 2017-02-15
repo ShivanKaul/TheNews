@@ -1,5 +1,8 @@
 'use strict';
 
+/*
+    Helper functions
+*/
 function flatten(array) {
     return [].concat.apply([], array);
 }
@@ -9,10 +12,14 @@ function getDomain(url) {
     return matcher && matcher[1];
 }
 
-/**
- * Randomize array element order in-place.
- * O(num)
- * Using Durstenfeld shuffle algorithm, stopping after we have enough.
+function contains(str, substring) {
+    return str.indexOf(substring) > -1;
+}
+
+/*
+    Randomize array element order in-place.
+    O(num)
+    Using Durstenfeld shuffle algorithm, stopping after we have enough.
  */
 function pickRandom(num, array) {
     for (var i = array.length - 1; i > 0 && i >= array.length - num; i--) {
@@ -25,13 +32,13 @@ function pickRandom(num, array) {
     return array.slice(Math.max(array.length - num, 1));
 }
 
-
-// Flow:
-// Starting with list of categories, map it to a list of sources
-// Flatten and map this list, doing a query for each source and build list of {title, abstract, url}
-// Display them.
-
-// Note: Don't support filtering based on news sources because of limitations in newsapi.org
+/*
+    Flow:
+    - Starting with list of categories, map it to a list of sources
+    - Flatten and map this list, doing a query for each source and build list of {title, abstract, url}
+    - Display them.
+    Note: Don't support filtering based on news sources because of limitations in newsapi.org
+*/
 
 // Local storage: Options
 var CYCLE_INTERVAL = 10; // in seconds
@@ -39,7 +46,7 @@ var BASE_API_URL_SOURCES = "https://newsapi.org/v1/sources?category=";
 var BASE_API_URL_ARTICLES = "https://newsapi.org/v1/articles?source=";
 var CYCLE = true;
 var CATEGORIES = "";
-// Local storage: Cache
+// Local storage: Cache (results)
 var CACHED_RESULTS = {};
 var LANGUAGE = "en"
 var CACHED_TIMESTAMP = null;
@@ -47,8 +54,10 @@ var CACHE_EXPIRY = 60;
 var MAX_STORIES = 20; // Too many stories leads to Chrome Storage error
 var AJAX_TIMEOUT = 10; // in seconds
 
-// Restores options and result cache
-// stored in chrome.storage asynchronously
+/*
+    Restores options and result cache
+    stored in chrome.storage asynchronously
+*/
 function restoreLocalStorage() {
     // Default
     chrome.storage.sync.get({
@@ -69,16 +78,18 @@ function restoreLocalStorage() {
         CACHE_EXPIRY = items.cache_expiry;
 
         var currentTime = Math.floor(Date.now() / 1000); // UNIX in seconds
-        // Cache expiry : 1 minute
+        // Cache default expiry : 1 minute
         if (CACHED_TIMESTAMP && currentTime - CACHED_TIMESTAMP < CACHE_EXPIRY) {
             console.log("[DEBUG][TheNews]: Using cached stories, current cache expiry is " + CACHE_EXPIRY + " seconds");
             console.log("[DEBUG][TheNews]: Current time: " + currentTime + ", cache time: " + CACHED_TIMESTAMP);
             display(CACHED_RESULTS, false);
         } else {
+            // Cache expired
             fetchDecodeDisplay();
         }
     });
 }
+
 
 // Save results in local cache
 function saveResults(results) {
@@ -97,7 +108,8 @@ function getRandomStory(numResults, stories) {
     var abstract = stories[randomNum].abstract;
     var url = stories[randomNum].url;
     var source = stories[randomNum].source;
-    var uninteresting = (title == "Letters to the Editor" || title.indexOf("Evening Briefing") > -1 || title == "Reactions" || title.indexOf("Review: ") > -1);
+    // Originally done for NYT extension
+    var uninteresting = (title == "Letters to the Editor" || contains(title, "Evening Briefing") || title == "Reactions" || contains(title, "Review: "));
     // Basic uninteresting article filtering
     if (uninteresting) {
         // Remove uninteresting story: citation: http://stackoverflow.com/a/5767357/2989693
@@ -112,6 +124,11 @@ function getRandomStory(numResults, stories) {
     };
 }
 
+/*
+    Using jquery AJAX to fetch because I import it anyway for the CSS, and this looked
+    the cleanest.
+    Used by fetchSources() and fetchStories()
+*/
 function fetch(queryURL, errorMessage, processResults) {
     return new Promise(
         function(resolve, reject) {
@@ -130,6 +147,7 @@ function fetch(queryURL, errorMessage, processResults) {
                 error: function(jqXHR, textStatus, errorThrown) {
                     var cacheAvailableText = ". No cached stories available.";
                     if (!$.isEmptyObject(CACHED_RESULTS)) {
+                        // If cache is not empty
                         cacheAvailableText = ". Trying to display cached results.";
                         display(CACHED_RESULTS, false);
                     }
@@ -140,6 +158,7 @@ function fetch(queryURL, errorMessage, processResults) {
     );
 }
 
+// Step 1
 var fetchSources = function() {
     var categories = CATEGORIES.split(";");
     return Promise.all(
@@ -156,6 +175,7 @@ var fetchSources = function() {
     );
 };
 
+// Step 2
 var fetchStories = function(sources) {
     return Promise.all(
         flatten(sources)
@@ -170,11 +190,13 @@ var fetchStories = function(sources) {
     );
 }
 
+// Step 3
 var decode = function(results) {
     // Decompose into title, abstract, url
     return new Promise(
         function(resolve, reject) {
             resolve({
+                // Choose MAX_STORIES number of stories at random from all results
                 stories: pickRandom(MAX_STORIES, flatten(results)).map(function(result) {
                     return {
                         title: result.title,
@@ -188,6 +210,7 @@ var decode = function(results) {
     );
 };
 
+// Step 4
 var display = function(results, updateCache) {
     function display(results, updateCache) {
         var result = getRandomStory(results.stories.length, results.stories);
@@ -219,6 +242,7 @@ var display = function(results, updateCache) {
     }
 }
 
+// Execute!
 function fetchDecodeDisplay() {
     // Fetch -> Decode -> Display
     fetchSources()
@@ -230,5 +254,5 @@ function fetchDecodeDisplay() {
         });
 }
 
-// We start with restoring local storage
+// We start with restoring state - options and cached results (if any)
 restoreLocalStorage();

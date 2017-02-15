@@ -1,6 +1,8 @@
-// Citation: https://developer.chrome.com/extensions/optionsV2
-// Saves options to chrome.storage.sync.
+'use strict';
 
+/*
+    Get current options as marked by user, and save to l.s.
+*/
 function saveOptions() {
 
     var formElements = document.getElementById('settings').elements;
@@ -33,9 +35,7 @@ function saveOptions() {
     });
 }
 
-document.getElementById('save').addEventListener('click',
-    saveOptions);
-
+// Update view with options in l.s.
 function getOptions() {
     // Modify view
     chrome.storage.sync.get({
@@ -63,15 +63,17 @@ function getOptions() {
         // document.getElementById(items.language.toString()).checked = true;
     });
 }
-document.addEventListener('DOMContentLoaded', getOptions);
 
-var cycle = document.getElementById("cycle");
-cycle.addEventListener("change", function(e) {
+// Add event listeners
+document.addEventListener('DOMContentLoaded', getOptions);
+document.getElementById("cycle").addEventListener("change", function(e) {
     if (e.target.checked) {
-        //show the div:
+        // show the div:
         document.getElementById('interval').style.display = "block";
     } else {
-        //hide the div:
+        // hide the div:
         document.getElementById('interval').style.display = "none";
     }
 });
+document.getElementById('save').addEventListener('click',
+    saveOptions);
