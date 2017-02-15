@@ -165,7 +165,7 @@ function fetch(queryURL, errorMessage, processResults) {
     );
 }
 
-// Step 1
+// Step 1.1
 var fetchSources = function() {
     var categories = CATEGORIES.split(";");
     return Promise.all(
@@ -182,7 +182,7 @@ var fetchSources = function() {
     );
 };
 
-// Step 2
+// Step 1.2
 var fetchStories = function(sources) {
     return Promise.all(
         flatten(sources)
@@ -197,7 +197,7 @@ var fetchStories = function(sources) {
     );
 }
 
-// Step 3
+// Step 2
 var decode = function(results) {
     // Decompose into title, abstract, url
     return new Promise(
@@ -217,17 +217,17 @@ var decode = function(results) {
     );
 };
 
-// Step 4
+// Step 3
 var display = function(results, updateCache) {
     function display(results, updateCache) {
         var result = getRandomStory(results.stories.length, results.stories);
         var title = result.title;
         var link = result.url;
-        // Add quotes
-        var abstract = "";
+        // Handle fact that source or abstract / description or both might not exist
+        var abstract = result.source ? result.source : "";
         if (result.abstract) {
             var quotedAbstract = "&ldquo;" + result.abstract + "&rdquo;";
-            abstract = result.source ? result.source + " - " + quotedAbstract : quotedAbstract;
+            abstract = abstract ? abstract + " - " + quotedAbstract : quotedAbstract;
         }
         // Display
         document.getElementById("headline").setAttribute('href', link);
